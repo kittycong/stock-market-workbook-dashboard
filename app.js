@@ -1,5 +1,6 @@
 const categories = [
   "국내 주식 / 코스피",
+  "지수 / 환율 / 원자재",
   "AI / 빅테크 / 클라우드",
   "반도체 / AI 인프라",
   "기업 SW / SaaS / 보안",
@@ -98,6 +99,17 @@ const newsItems = [
   ["14:38", "VOO", "ETF", "대형주 분산 코어 포지션으로 장기 방어 라인 유지", "flat"],
 ].map(([time, ticker, type, headline, impact]) => ({ time, ticker, type, headline, impact }));
 
+const macroItems = [
+  { key: "usdkrw", label: "달러", ticker: "KRW=X", unit: "원", type: "krw" },
+  { key: "jpykrw", label: "엔화", ticker: "JPYKRW=X", unit: "원", type: "jpykrw" },
+  { key: "tnx", label: "美10Y", ticker: "^TNX", unit: "%", type: "yield" },
+  { key: "wti", label: "유가", ticker: "CL=F", unit: "달러", type: "usd" },
+  { key: "gold", label: "금", ticker: "GC=F", unit: "달러", type: "usd" },
+  { key: "kospi", label: "코스피", ticker: "^KS11", unit: "pt", type: "index" },
+  { key: "sp500", label: "S&P500", ticker: "^GSPC", unit: "pt", type: "index" },
+  { key: "nasdaq", label: "나스닥", ticker: "^IXIC", unit: "pt", type: "index" },
+];
+
 const safeStore = {
   get(key, fallback) {
     try {
@@ -169,6 +181,8 @@ const state = {
   liveQuotes: {},
   liveQuoteErrors: {},
   liveQuotesFetchedAt: null,
+  macroQuotes: {},
+  macroFetchedAt: null,
   liveNews: null,
   liveProfile: null,
   companyInfo: null,
@@ -190,6 +204,7 @@ const searchInput = document.querySelector("#searchInput");
 const riskSelect = document.querySelector("#riskSelect");
 const statusText = document.querySelector("#statusText");
 const tickerTape = document.querySelector("#tickerTape");
+const macroStrip = document.querySelector("#macroStrip");
 const watchRows = document.querySelector("#watchRows");
 const watchCount = document.querySelector("#watchCount");
 const chatBody = document.querySelector("#chatBody");
@@ -407,6 +422,39 @@ function formatQuoteMove(quote, fallbackTicker = "") {
   };
 }
 
+function formatMacroValue(item, quote) {
+  if (!quote || !Number.isFinite(quote.price)) return "연결 대기";
+  const price = quote.price;
+  if (item.type === "krw") return `${price.toLocaleString("ko-KR", { maximumFractionDigits: 2 })}${item.unit}`;
+  if (item.type === "jpykrw") {
+    const value = price < 20 ? price * 100 : price;
+    return `100엔 ${value.toLocaleString("ko-KR", { maximumFractionDigits: 2 })}${item.unit}`;
+  }
+  if (item.type === "yield") {
+    const value = price > 20 ? price / 10 : price;
+    return `${value.toFixed(2)}${item.unit}`;
+  }
+  if (item.type === "usd") return `$${price.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+  return price.toLocaleString("ko-KR", { maximumFractionDigits: 2 });
+}
+
+function renderMacroStrip() {
+  macroStrip.innerHTML = macroItems
+    .map((item) => {
+      const quote = state.macroQuotes[item.ticker];
+      const move = formatQuoteMove(quote, item.ticker);
+      const tone = move.tone === "down" ? "down" : move.tone === "up" ? "up" : "";
+      return `
+        <button class="macro-pill ${tone}" type="button" data-macro-ticker="${item.ticker}" title="${item.ticker}">
+          <span>${item.label}</span>
+          <strong>${formatMacroValue(item, quote)}</strong>
+          <em>${move.label}</em>
+        </button>
+      `;
+    })
+    .join("");
+}
+
 async function loadLiveQuotes(tickers = holdings.map((item) => item.ticker)) {
   if (!state.liveMode) {
     renderTickerTape();
@@ -430,6 +478,21 @@ async function loadLiveQuotes(tickers = holdings.map((item) => item.ticker)) {
     renderTickerTape();
     renderBoard();
     statusText.textContent = `실시간 가격 묶음 호출 실패 · ${error.message}`;
+  }
+}
+
+async function loadMacroQuotes() {
+  renderMacroStrip();
+  if (!state.liveMode) return;
+  try {
+    const tickers = macroItems.map((item) => item.ticker);
+    const payload = await fetchJson(`/api/quotes?tickers=${encodeURIComponent(tickers.join(","))}`);
+    state.macroQuotes = payload.quotes || {};
+    state.macroFetchedAt = payload.fetchedAt;
+    renderMacroStrip();
+  } catch (error) {
+    renderMacroStrip();
+    statusText.textContent = `상단 환율/지수 호출 실패 · ${error.message}`;
   }
 }
 
@@ -1097,6 +1160,7 @@ function addCustomHolding(formData) {
 function ensureHolding(ticker, company = "") {
   const normalized = normalizeTicker(ticker);
   if (!normalized) return;
+  const macroItem = macroItems.find((item) => item.ticker === normalized);
   if (holdings.some((item) => item.ticker === normalized)) {
     if (company) {
       state.customHoldings = state.customHoldings.map((item) =>
@@ -1109,10 +1173,10 @@ function ensureHolding(ticker, company = "") {
   }
   state.customHoldings.push({
     ticker: normalized,
-    company: company || normalized,
-    description: "외부 표에서 자동 추가된 종목",
-    category: isKoreanTicker(normalized) ? "국내 주식 / 코스피" : "AI / 빅테크 / 클라우드",
-    risk: "growth",
+    company: company || macroItem?.label || normalized,
+    description: macroItem ? `${macroItem.label} 실시간 매크로 지표` : "외부 표에서 자동 추가된 종목",
+    category: macroItem ? "지수 / 환율 / 원자재" : isKoreanTicker(normalized) ? "국내 주식 / 코스피" : "AI / 빅테크 / 클라우드",
+    risk: macroItem ? "etf" : "growth",
     score: 3,
     custom: true,
   });
@@ -1432,9 +1496,17 @@ document.querySelector("#clearButton").addEventListener("click", () => {
 
 document.querySelector("#refreshButton").addEventListener("click", () => {
   loadLiveQuotes();
+  loadMacroQuotes();
   loadLiveChart();
   loadLiveNews();
   statusText.textContent = state.liveMode ? "실시간 데이터 새로 고침 중..." : "파일 모드 · 샘플 데이터 새로 고침";
+});
+
+macroStrip.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-macro-ticker]");
+  if (!button) return;
+  const item = macroItems.find((entry) => entry.ticker === button.dataset.macroTicker);
+  selectTicker(button.dataset.macroTicker, { company: item?.label });
 });
 
 document.querySelector(".sheet-sidebar").addEventListener("click", (event) => {
@@ -1559,9 +1631,11 @@ populateAddStockCategories();
 renderRows();
 renderSelectors();
 renderTickerTape();
+renderMacroStrip();
 renderChat();
 renderBoard();
 loadLiveQuotes();
+loadMacroQuotes();
 loadLiveChart();
 loadLiveNews();
 loadProfile();
@@ -1569,6 +1643,7 @@ loadKospiQuant();
 loadFundFlow();
 setInterval(() => {
   loadLiveQuotes();
+  loadMacroQuotes();
   loadLiveChart();
   loadLiveNews();
 }, 60000);

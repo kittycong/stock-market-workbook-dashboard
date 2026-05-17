@@ -135,7 +135,7 @@ const profileSnapshots = {
 };
 
 function safeTicker(value) {
-  return String(value || "NVDA").replace(/[^A-Z0-9.-]/gi, "").toUpperCase().slice(0, 12) || "NVDA";
+  return String(value || "NVDA").replace(/[^A-Z0-9.^=-]/gi, "").toUpperCase().slice(0, 18) || "NVDA";
 }
 
 function clamp(value, min = 0, max = 100) {
