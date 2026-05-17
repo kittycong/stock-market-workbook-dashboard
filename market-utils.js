@@ -636,6 +636,54 @@ async function fetchJudalFundFlowPayload(typeValue = "fundBuy") {
   };
 }
 
+async function fetchJudalThemeListPayload(typeValue = "expectRateDesc") {
+  const type = String(typeValue || "expectRateDesc").replace(/[^a-zA-Z]/g, "") || "expectRateDesc";
+  const upstream = await fetch(`https://www.judal.co.kr/?view=themeList&type=${type}`, {
+    headers: { "User-Agent": "Mozilla/5.0 SYMarketWorkbook/1.0" },
+  });
+  if (!upstream.ok) throw new Error(`Judal theme list responded ${upstream.status}`);
+  const html = await upstream.text();
+  const rows = [...html.matchAll(/<tr style="border-color:#bcd0c7 !important">([\s\S]*?)<\/tr>/g)]
+    .map((match, index) => {
+      const rowHtml = match[1];
+      const themeIdx = rowHtml.match(/themeIdx=(\d+)/)?.[1] || "";
+      const name = stripHtml(rowHtml.match(/<b>([\s\S]*?)<\/b>/)?.[1]);
+      const info = stripHtml(rowHtml.match(/data-bs-toggle="tooltip" title="([\s\S]*?)"/)?.[1]);
+      const cells = [...rowHtml.matchAll(/<td[\s\S]*?>([\s\S]*?)<\/td>/g)].map((cell) => stripHtml(cell[1]));
+      const sparkline = rowHtml.match(/class="inlinesparkline" values="([^"]+)"/)?.[1] || "";
+      if (!name || cells.length < 13) return null;
+      return {
+        rank: index + 1,
+        themeIdx,
+        name,
+        link: themeIdx ? `https://www.judal.co.kr/?view=stockList&themeIdx=${themeIdx}` : "https://www.judal.co.kr/?view=themeList&type=expectRateDesc",
+        talkLink: themeIdx ? `https://www.judal.co.kr/?view=talk&themeIdx=${themeIdx}` : "",
+        changeRate: cells[0],
+        threeDay: cells[1],
+        week52Up: cells[2],
+        week52Down: cells[3],
+        week52Alienation: cells[4],
+        year3Up: cells[5],
+        year3Down: cells[6],
+        year3Alienation: cells[7],
+        expectedReturn: cells[8],
+        userScore: cells[9],
+        updated: cells.at(-1) || "",
+        sparkline: sparkline.split(",").map((value) => Number(value.trim())).filter(Number.isFinite),
+        info,
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 30);
+
+  return {
+    source: "Judal 기대수익률 높은 테마",
+    type,
+    items: rows,
+    fetchedAt: new Date().toISOString(),
+  };
+}
+
 function extractFirst(pattern, text, fallback = "") {
   const match = text.match(pattern);
   return match ? stripHtml(match[1]) : fallback;
@@ -700,6 +748,7 @@ module.exports = {
   getKoreanNewsFallback,
   fetchNaverQuantPayload,
   fetchJudalFundFlowPayload,
+  fetchJudalThemeListPayload,
   fetchNaverCompanyInfoPayload,
   getProfilePayload,
   getDynamicProfilePayload,

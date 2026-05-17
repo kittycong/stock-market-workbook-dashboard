@@ -190,6 +190,7 @@ const state = {
   kospiQuant: null,
   fundFlow: null,
   fundFlowType: "fundBuy",
+  themeList: null,
   newsSource: "google",
   signalView: "strong-buy",
   liveMode: location.protocol.startsWith("http"),
@@ -265,6 +266,10 @@ const fundFlowSubtitle = document.querySelector("#fundFlowSubtitle");
 const fundFlowRows = document.querySelector("#fundFlowRows");
 const fundFlowControls = document.querySelector(".fund-flow-controls");
 const refreshFundFlowButton = document.querySelector("#refreshFundFlowButton");
+const themePanel = document.querySelector("#themePanel");
+const themeSubtitle = document.querySelector("#themeSubtitle");
+const themeRows = document.querySelector("#themeRows");
+const refreshThemeButton = document.querySelector("#refreshThemeButton");
 
 function seededMove(ticker) {
   const seed = ticker.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
@@ -588,6 +593,22 @@ async function loadFundFlow() {
     state.fundFlow = null;
     renderFundFlow();
     fundFlowSubtitle.textContent = `주달 호출 실패 · ${error.message}`;
+  }
+}
+
+async function loadThemeList() {
+  if (!state.liveMode) {
+    state.themeList = null;
+    renderThemeList();
+    return;
+  }
+  try {
+    state.themeList = await fetchJson("/api/theme-list?type=expectRateDesc");
+    renderThemeList();
+  } catch (error) {
+    state.themeList = null;
+    renderThemeList();
+    themeSubtitle.textContent = `주달 테마 호출 실패 · ${error.message}`;
   }
 }
 
@@ -933,6 +954,36 @@ function renderFundFlow() {
           <td>${item.per}</td>
           <td>${item.marketCap}</td>
           <td>${(item.themes || []).slice(0, 6).map((theme) => `<span class="theme-chip">${theme}</span>`).join("")}</td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+function renderThemeList() {
+  const fallback = [
+    { rank: 1, name: "로드 중", changeRate: "-", threeDay: "-", week52Up: "-", year3Up: "-", expectedReturn: "-", userScore: "-", updated: "-", info: "주달 기대수익률 높은 테마 데이터를 불러오는 중입니다.", link: "https://www.judal.co.kr/?view=themeList&type=expectRateDesc" },
+  ];
+  const rows = state.themeList?.items?.length ? state.themeList.items : fallback;
+  themeSubtitle.textContent = state.themeList
+    ? `${state.themeList.source} · ${rows.length}개 · ${new Date(state.themeList.fetchedAt).toLocaleTimeString("ko-KR")}`
+    : "주달 테마 기대수익률 기준 · 로딩/폴백";
+  themeRows.innerHTML = rows
+    .map((item) => {
+      const changeTone = String(item.changeRate).includes("-") ? "kospi-down" : String(item.changeRate) === "-" ? "" : "kospi-up";
+      const threeDayTone = String(item.threeDay).includes("-") ? "kospi-down" : String(item.threeDay) === "-" ? "" : "kospi-up";
+      return `
+        <tr data-theme-link="${escapeHtml(item.link || "")}" data-theme-name="${escapeHtml(item.name)}">
+          <td>${item.rank || ""}</td>
+          <td class="theme-name"><strong>${item.name}</strong><span>${item.themeIdx ? `themeIdx ${item.themeIdx}` : "Judal Theme"}</span></td>
+          <td class="${changeTone}">${item.changeRate}</td>
+          <td class="${threeDayTone}">${item.threeDay}</td>
+          <td>${item.week52Up}</td>
+          <td>${item.year3Up}</td>
+          <td class="kospi-up"><strong>${item.expectedReturn}</strong></td>
+          <td>${item.userScore}</td>
+          <td>${item.updated}</td>
+          <td class="theme-memo">${item.info || "테마 구성 종목 확인"}</td>
         </tr>
       `;
     })
@@ -1345,6 +1396,7 @@ function applyPreset(preset) {
     strongSell: { category: "전체", risk: "all", query: "", favoritesOnly: false },
     kospi: { category: "전체", risk: "all", query: "", favoritesOnly: false },
     fund: { category: "전체", risk: "all", query: "", favoritesOnly: false },
+    theme: { category: "전체", risk: "all", query: "", favoritesOnly: false },
   };
   const next = presets[preset] || presets.all;
   state.category = next.category;
@@ -1367,6 +1419,10 @@ function applyPreset(preset) {
   if (preset === "fund") {
     loadFundFlow();
     fundFlowPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  if (preset === "theme") {
+    loadThemeList();
+    themePanel.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }
 
@@ -1551,6 +1607,7 @@ document.querySelector(".sheet-sidebar").addEventListener("click", (event) => {
   else if (label.includes("ETF")) applyPreset("etf");
   else if (label.includes("고변동")) applyPreset("volatile");
   else if (label.includes("즐겨찾기")) applyPreset("favorites");
+  else if (label.includes("기대수익률 테마")) applyPreset("theme");
   else if (label.includes("코스피 상위")) applyPreset("kospi");
   else if (label.includes("연기금")) applyPreset("fund");
   else if (label.includes("적극 매수")) applyPreset("strongBuy");
@@ -1566,6 +1623,7 @@ document.querySelector(".sheet-tabs").addEventListener("click", (event) => {
   if (label === "코인") applyPreset("crypto");
   else if (label === "ETF") applyPreset("etf");
   else if (label === "즐겨찾기") applyPreset("favorites");
+  else if (label === "테마") applyPreset("theme");
   else if (label === "코스피상위") applyPreset("kospi");
   else if (label === "연기금") applyPreset("fund");
   else if (label === "적극매수") applyPreset("strongBuy");
@@ -1622,6 +1680,23 @@ fundFlowRows.addEventListener("click", (event) => {
   });
 });
 
+refreshThemeButton.addEventListener("click", () => {
+  loadThemeList();
+});
+
+themeRows.addEventListener("click", (event) => {
+  const row = event.target.closest("[data-theme-link]");
+  if (!row) return;
+  const url = row.dataset.themeLink || "https://www.judal.co.kr/?view=themeList&type=expectRateDesc";
+  const popup = window.open(url, "marketWorkbookTheme", "popup=yes,width=1120,height=780,menubar=yes,toolbar=yes,scrollbars=yes,resizable=yes");
+  if (popup) {
+    popup.focus();
+    statusText.textContent = `${row.dataset.themeName || "테마"} 구성 종목 팝업 열림`;
+  } else {
+    statusText.textContent = "팝업이 차단되었습니다. 브라우저에서 팝업 허용을 켜주세요.";
+  }
+});
+
 document.querySelector(".tabs").addEventListener("click", (event) => {
   const button = event.target.closest("button");
   if (!button) return;
@@ -1674,6 +1749,7 @@ loadLiveNews();
 loadProfile();
 loadKospiQuant();
 loadFundFlow();
+loadThemeList();
 setInterval(() => {
   loadLiveQuotes();
   loadMacroQuotes();
@@ -1684,4 +1760,5 @@ setInterval(() => {
   loadProfile();
   loadKospiQuant();
   loadFundFlow();
+  loadThemeList();
 }, 300000);

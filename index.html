@@ -91,6 +91,7 @@
           <button type="button">ETF 방어</button>
           <button type="button">고변동 주의</button>
           <button type="button">★ 즐겨찾기</button>
+          <button type="button">기대수익률 테마</button>
           <button type="button">코스피 상위종목</button>
           <button type="button">연기금 수급</button>
           <button type="button">적극 매수 시트</button>
@@ -342,6 +343,37 @@
                 </div>
               </section>
 
+              <section class="theme-panel" id="themePanel" aria-label="주달 기대수익률 높은 테마">
+                <header class="panel-head">
+                  <div>
+                    <strong>기대수익률 높은 테마</strong>
+                    <span id="themeSubtitle">주달 테마 기대수익률 기준</span>
+                  </div>
+                  <div class="theme-controls">
+                    <button id="refreshThemeButton" type="button">테마 새로고침</button>
+                  </div>
+                </header>
+                <div class="theme-table-wrap">
+                  <table class="theme-table">
+                    <thead>
+                      <tr>
+                        <th>순위</th>
+                        <th>테마명</th>
+                        <th>전일비</th>
+                        <th>3일합산</th>
+                        <th>52주 상승</th>
+                        <th>3년 상승</th>
+                        <th>기대수익률</th>
+                        <th>유저점수</th>
+                        <th>업데이트</th>
+                        <th>메모</th>
+                      </tr>
+                    </thead>
+                    <tbody id="themeRows"></tbody>
+                  </table>
+                </div>
+              </section>
+
               <section class="content-grid">
                 <div class="kanban-board" id="kanbanBoard" aria-live="polite"></div>
                 <aside class="watch-table">
@@ -403,6 +435,7 @@
           <button type="button">코인</button>
           <button type="button">ETF</button>
           <button type="button">즐겨찾기</button>
+          <button type="button">테마</button>
           <button type="button">코스피상위</button>
           <button type="button">연기금</button>
           <button type="button">적극매수</button>

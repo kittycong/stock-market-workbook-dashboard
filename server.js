@@ -9,6 +9,7 @@ const {
   getKoreanNewsFallback,
   fetchNaverQuantPayload,
   fetchJudalFundFlowPayload,
+  fetchJudalThemeListPayload,
   fetchNaverCompanyInfoPayload,
   getDynamicProfilePayload,
 } = require("./market-utils");
@@ -90,6 +91,15 @@ async function handleFundFlow(request, response) {
   }
 }
 
+async function handleThemeList(request, response) {
+  const url = new URL(request.url, `http://${request.headers.host}`);
+  try {
+    sendJson(response, 200, await fetchJudalThemeListPayload(url.searchParams.get("type") || "expectRateDesc"));
+  } catch (error) {
+    sendJson(response, 502, { error: "theme_list_fetch_failed", message: error.message });
+  }
+}
+
 async function handleCompanyInfo(request, response) {
   const url = new URL(request.url, `http://${request.headers.host}`);
   try {
@@ -146,6 +156,10 @@ http
     }
     if (route === "/api/fund-flow") {
       handleFundFlow(request, response);
+      return;
+    }
+    if (route === "/api/theme-list") {
+      handleThemeList(request, response);
       return;
     }
     if (route === "/api/company-info") {
