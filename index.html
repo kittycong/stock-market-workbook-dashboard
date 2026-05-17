@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SY Market Workbook</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23217246'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='18' font-family='Arial' font-weight='700' fill='white'%3EX%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="excel-app">
+      <header class="titlebar">
+        <div class="title-left">
+          <span class="app-icon">X</span>
+          <span class="doc-title">SY Market Workbook - 참고용.xlsx</span>
+        </div>
+        <div class="title-center">자동 저장 켜짐 · 마지막 정리 2026-05-17</div>
+        <div class="window-icons" aria-hidden="true">
+          <span>－</span>
+          <span>□</span>
+          <span>×</span>
+        </div>
+      </header>
+
+      <nav class="tabs" aria-label="엑셀 메뉴">
+        <button class="active" type="button">파일</button>
+        <button type="button">홈</button>
+        <button type="button">삽입</button>
+        <button type="button">수식</button>
+        <button type="button">데이터</button>
+        <button type="button">검토</button>
+        <button type="button">자동화</button>
+        <button type="button">도움말</button>
+      </nav>
+
+      <section class="ribbon" aria-label="엑셀 리본">
+        <div class="tool big">붙여넣기<span>클립보드</span></div>
+        <div class="tool-stack">
+          <button type="button">잘라내기</button>
+          <button type="button">복사</button>
+          <button type="button">서식 복사</button>
+        </div>
+        <div class="tool-stack font-tools">
+          <select aria-label="글꼴">
+            <option>맑은 고딕</option>
+          </select>
+          <select aria-label="크기">
+            <option>11</option>
+          </select>
+          <div class="mini-buttons">
+            <button type="button">B</button>
+            <button type="button">I</button>
+            <button type="button">U</button>
+            <button type="button">▦</button>
+          </div>
+          <span>글꼴</span>
+        </div>
+        <div class="tool-stack">
+          <button type="button">병합하고 가운데</button>
+          <button type="button">조건부 서식</button>
+          <button type="button">표 서식</button>
+          <span>스타일</span>
+        </div>
+        <div class="tool-stack wide">
+          <button id="refreshButton" type="button">시세 새로 고침</button>
+          <button id="clearButton" type="button">필터 초기화</button>
+          <button type="button">정렬 및 필터</button>
+          <span>데이터</span>
+        </div>
+      </section>
+
+      <section class="formula-row" aria-label="수식 입력줄">
+        <div class="name-box">A1</div>
+        <div class="fx">fx</div>
+        <div class="formula">=LIVE_MARKET_FEED("YAHOO_FINANCE","GOOGLE_NEWS","NOT_ADVICE")</div>
+      </section>
+
+      <section class="workspace">
+        <aside class="sheet-sidebar" aria-label="워크북 폴더">
+          <div class="avatar">SY</div>
+          <div class="folder-title">관심 종목</div>
+          <button type="button" id="openAddStockButton">＋ 종목 추가</button>
+          <button class="active" type="button">트럼프 포트폴리오</button>
+          <button type="button">젠슨황 NOW 메모</button>
+          <button type="button">AI 컴퓨팅 파워</button>
+          <button type="button">반도체 설계</button>
+          <button type="button">ETF 방어</button>
+          <button type="button">고변동 주의</button>
+          <button type="button">코스피 상위종목</button>
+          <button type="button">연기금 수급</button>
+          <button type="button">적극 매수 시트</button>
+          <button type="button">적극 매도 시트</button>
+        </aside>
+
+        <section class="sheet-frame">
+          <div class="column-letters" aria-hidden="true">
+            <span></span>
+            <span>A</span><span>B</span><span>C</span><span>D</span><span>E</span><span>F</span><span>G</span><span>H</span>
+          </div>
+          <div class="sheet-body">
+            <div class="row-numbers" aria-hidden="true"></div>
+            <div class="sheet-canvas">
+              <header class="market-brief">
+                <div>
+                  <h1>일하면서 몰래보는 포트폴리오 시트</h1>
+                  <p>트럼프 리스트 + AI 로봇 자동화 테마 + ETF 방어 라인</p>
+                </div>
+                <div class="brief-actions">
+                  <input id="searchInput" type="search" placeholder="티커 / 기업 / 테마 검색" />
+                  <select id="riskSelect" aria-label="리스크 필터">
+                    <option value="all">전체</option>
+                    <option value="core">코어</option>
+                    <option value="growth">성장</option>
+                    <option value="defensive">방어</option>
+                    <option value="volatile">고변동</option>
+                    <option value="etf">ETF</option>
+                  </select>
+                </div>
+              </header>
+
+              <div class="ticker-tape" id="tickerTape" aria-label="티커 요약"></div>
+
+              <section class="summary-grid" id="statsRow" aria-label="요약 지표"></section>
+
+              <nav class="category-tabs" id="categoryTabs" aria-label="섹터 선택"></nav>
+
+              <section class="market-panels" aria-label="종목 뉴스와 차트">
+                <section class="chart-panel">
+                  <header class="panel-head">
+                    <div>
+                      <strong id="chartTitle">$NVDA 차트</strong>
+                      <span id="chartSubtitle">샘플 가격 흐름 · file:// 로컬 작동</span>
+                    </div>
+                    <div class="chart-controls">
+                      <select id="chartTickerSelect" aria-label="차트 종목 선택"></select>
+                      <select id="chartRangeSelect" aria-label="차트 기간 선택">
+                        <option value="1D">1D</option>
+                        <option value="5D">5D</option>
+                        <option value="1M">1M</option>
+                        <option value="6M">6M</option>
+                      </select>
+                      <button id="expandChartButton" class="chart-expand-button" type="button">크게 보기</button>
+                    </div>
+                  </header>
+                  <div class="chart-wrap">
+                    <canvas id="priceChart" width="680" height="260" aria-label="선택 종목 가격 차트"></canvas>
+                  </div>
+                  <div class="chart-metrics" id="chartMetrics"></div>
+                </section>
+
+                <section class="news-panel">
+                  <header class="panel-head">
+                    <div>
+                      <strong>시각별 종목 뉴스피드</strong>
+                      <span>종목 클릭 시 차트 연동</span>
+                    </div>
+                    <div class="news-controls">
+                      <select id="newsSourceSelect" aria-label="뉴스 소스 선택">
+                        <option value="google">Google News</option>
+                        <option value="naver">네이버뉴스 한글</option>
+                      </select>
+                      <select id="newsTickerSelect" aria-label="뉴스 종목 필터">
+                        <option value="all">전체 뉴스</option>
+                      </select>
+                    </div>
+                  </header>
+                  <div class="news-table-wrap">
+                    <table class="news-table">
+                      <thead>
+                        <tr>
+                          <th>시간</th>
+                          <th>티커</th>
+                          <th>분류</th>
+                          <th>헤드라인</th>
+                          <th>영향</th>
+                        </tr>
+                      </thead>
+                      <tbody id="newsRows"></tbody>
+                    </table>
+                  </div>
+                </section>
+              </section>
+
+              <section class="profile-panel" aria-label="종목 커버리지와 프로필">
+                <header class="panel-head">
+                  <div>
+                    <strong id="profileTitle">$NVDA 커버리지와 프로필</strong>
+                    <span id="profileSubtitle">핵심 지표와 해석 메모</span>
+                  </div>
+                  <div class="profile-status" id="profileStatus">데이터 상태: 로딩</div>
+                </header>
+                <div class="profile-grid">
+                  <section class="score-card">
+                    <div class="total-score">
+                      <span>퀀트 총점</span>
+                      <strong id="totalScore">--</strong>
+                    </div>
+                    <div class="score-bars" id="scoreBars"></div>
+                  </section>
+                  <section class="profile-facts" id="profileFacts"></section>
+                  <section class="profile-notes" id="profileNotes"></section>
+                </div>
+              </section>
+
+              <section class="technical-panel" aria-label="캔들스틱 패턴과 기술적 분석">
+                <header class="panel-head">
+                  <div>
+                    <strong>캔들스틱 패턴 · 기술적 맞춤시세</strong>
+                    <span id="technicalSubtitle">선택 종목 기준 자동 판독</span>
+                  </div>
+                  <div class="technical-controls">
+                    <label><input type="checkbox" class="tf-check" value="5m" checked />5분</label>
+                    <label><input type="checkbox" class="tf-check" value="15m" checked />15분</label>
+                    <label><input type="checkbox" class="tf-check" value="1h" checked />1시간</label>
+                    <label><input type="checkbox" class="tf-check" value="1d" checked />일간</label>
+                  </div>
+                </header>
+                <div class="technical-grid">
+                  <section class="technical-card">
+                    <div class="tech-title">맞춤시세 요약</div>
+                    <div class="technical-table-wrap">
+                      <table class="technical-table">
+                        <thead>
+                          <tr>
+                            <th>종목명</th>
+                            <th>유형</th>
+                            <th>5분</th>
+                            <th>15분</th>
+                            <th>1시간</th>
+                            <th>일간</th>
+                          </tr>
+                        </thead>
+                        <tbody id="customQuoteRows"></tbody>
+                      </table>
+                    </div>
+                  </section>
+                  <section class="technical-card">
+                    <div class="tech-title">주식의 기술적 지표</div>
+                    <div id="indicatorBlocks" class="indicator-blocks"></div>
+                  </section>
+                  <section class="technical-card wide">
+                    <div class="tech-title">캔들스틱 패턴</div>
+                    <div class="technical-table-wrap compact">
+                      <table class="technical-table">
+                        <thead>
+                          <tr>
+                            <th>종목명</th>
+                            <th>기간</th>
+                            <th>신뢰도</th>
+                            <th>패턴</th>
+                            <th>캔들 #</th>
+                          </tr>
+                        </thead>
+                        <tbody id="candlestickRows"></tbody>
+                      </table>
+                    </div>
+                  </section>
+                </div>
+              </section>
+
+              <section class="signal-sheet-panel" id="signalSheetPanel" aria-label="적극 매수와 적극 매도 전용 시트">
+                <header class="panel-head">
+                  <div>
+                    <strong id="signalSheetTitle">기술적 시그널 전용 시트</strong>
+                    <span id="signalSheetSubtitle">지표 요약 기준 적극 매수 / 적극 매도 종목</span>
+                  </div>
+                  <div class="signal-sheet-controls">
+                    <button class="active" type="button" data-signal-view="strong-buy">적극 매수</button>
+                    <button type="button" data-signal-view="strong-sell">적극 매도</button>
+                  </div>
+                </header>
+                <div class="signal-sheet-grid" id="signalSheetGrid"></div>
+              </section>
+
+              <section class="kospi-panel" id="kospiPanel" aria-label="네이버 금융 코스피 거래상위 종목">
+                <header class="panel-head">
+                  <div>
+                    <strong>코스피 상위종목</strong>
+                    <span id="kospiSubtitle">네이버 금융 거래상위 기준</span>
+                  </div>
+                  <div class="kospi-controls">
+                    <button id="refreshKospiButton" type="button">코스피 새로고침</button>
+                  </div>
+                </header>
+                <div class="kospi-table-wrap">
+                  <table class="kospi-table">
+                    <thead>
+                      <tr>
+                        <th>순위</th>
+                        <th>종목명</th>
+                        <th>현재가</th>
+                        <th>전일비</th>
+                        <th>등락률</th>
+                        <th>거래량</th>
+                        <th>거래대금</th>
+                        <th>시총</th>
+                        <th>PER</th>
+                        <th>ROE</th>
+                      </tr>
+                    </thead>
+                    <tbody id="kospiRows"></tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="fund-flow-panel" id="fundFlowPanel" aria-label="국민연금과 연기금 비중확대 비중축소 종목">
+                <header class="panel-head">
+                  <div>
+                    <strong id="fundFlowTitle">국민연금/연기금 비중확대 종목</strong>
+                    <span id="fundFlowSubtitle">주달 연기금 순매수/순매도 참고</span>
+                  </div>
+                  <div class="fund-flow-controls">
+                    <button class="active" type="button" data-fund-flow="fundBuy">비중확대</button>
+                    <button type="button" data-fund-flow="fundSell">비중축소</button>
+                    <button id="refreshFundFlowButton" type="button">새로고침</button>
+                  </div>
+                </header>
+                <div class="fund-flow-table-wrap">
+                  <table class="fund-flow-table">
+                    <thead>
+                      <tr>
+                        <th>순위</th>
+                        <th>종목</th>
+                        <th>금액</th>
+                        <th>현재가</th>
+                        <th>등락률</th>
+                        <th>3일합산</th>
+                        <th>기대수익률</th>
+                        <th>PBR</th>
+                        <th>PER</th>
+                        <th>시총</th>
+                        <th>테마</th>
+                      </tr>
+                    </thead>
+                    <tbody id="fundFlowRows"></tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="content-grid">
+                <div class="kanban-board" id="kanbanBoard" aria-live="polite"></div>
+                <aside class="watch-table">
+                  <div class="watch-head">
+                    <strong>관심 순위</strong>
+                    <span id="watchCount">0개</span>
+                  </div>
+                  <div id="watchRows" class="watch-rows"></div>
+                </aside>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <aside class="outlook-pane" aria-label="Outlook 뉴스 메모">
+          <div class="outlook-top">
+            <strong>Outlook</strong>
+            <span>실시간 메일</span>
+          </div>
+          <div class="mail-tabs">
+            <button class="active" type="button">중요</button>
+            <button type="button">기타</button>
+            <button type="button">메모</button>
+          </div>
+          <article class="mail-card primary">
+            <span class="mail-from">strategy-desk@company.local</span>
+            <h2>[업무 공유] AI 인프라 점검 자료</h2>
+            <p>NVDA, MSFT, AVGO, AMZN, ORCL, NOW 중심으로 컴퓨팅 파워 라인을 재정리했습니다.</p>
+          </article>
+          <article class="mail-card">
+            <span class="mail-from">risk-control@company.local</span>
+            <h2>고변동 주의</h2>
+            <p>MSTR, COIN, MARA, CVNA는 테마 노출이 강해서 비중 관리 우선.</p>
+          </article>
+          <article class="mail-card">
+            <span class="mail-from">workbook@outlook.kr</span>
+            <h2>참고용 공지</h2>
+            <p>매수 매도 추천 아니다. 그냥 참고용이다. 🤣</p>
+          </article>
+          <section class="chat-box">
+            <div class="chat-head">
+              <span>시세알림</span>
+              <button type="button">×</button>
+            </div>
+            <div class="chat-body" id="chatBody"></div>
+            <form id="noteForm" class="chat-form">
+              <input id="noteInput" type="text" placeholder="메모 남기기" />
+              <button type="submit">전송</button>
+            </form>
+          </section>
+        </aside>
+      </section>
+
+      <footer class="bottom-bar">
+        <div class="sheet-tabs">
+          <button class="active" type="button">자동</button>
+          <button type="button">국장</button>
+          <button type="button">미장</button>
+          <button type="button">코인</button>
+          <button type="button">ETF</button>
+          <button type="button">코스피상위</button>
+          <button type="button">연기금</button>
+          <button type="button">적극매수</button>
+          <button type="button">적극매도</button>
+          <button type="button">＋</button>
+        </div>
+        <div id="statusText">준비 · 시장 데이터를 불러오는 중...</div>
+        <div>접속 - 100% · 보통 보기</div>
+      </footer>
+    </main>
+
+    <div id="addStockModal" class="chart-modal" aria-hidden="true">
+      <section class="add-stock-panel" role="dialog" aria-modal="true" aria-labelledby="addStockTitle">
+        <header class="modal-head">
+          <div>
+            <strong id="addStockTitle">새 종목 추가</strong>
+            <span>티커를 추가하면 차트·뉴스·기술적 분석에 바로 연결됩니다.</span>
+          </div>
+          <button id="closeAddStockButton" type="button" aria-label="종목 추가 닫기">×</button>
+        </header>
+        <form id="addStockForm" class="add-stock-form">
+          <label>
+            <span>티커</span>
+            <input id="newTickerInput" type="text" placeholder="예: 005930.KS, NVDA, TSLA" required />
+          </label>
+          <label>
+            <span>기업명</span>
+            <input id="newCompanyInput" type="text" placeholder="예: 삼성전자" required />
+          </label>
+          <label>
+            <span>섹터</span>
+            <select id="newCategoryInput"></select>
+          </label>
+          <label>
+            <span>리스크</span>
+            <select id="newRiskInput">
+              <option value="core">코어</option>
+              <option value="growth">성장</option>
+              <option value="defensive">방어</option>
+              <option value="volatile">고변동</option>
+              <option value="etf">ETF</option>
+            </select>
+          </label>
+          <label class="full">
+            <span>한줄 설명</span>
+            <input id="newDescriptionInput" type="text" placeholder="예: 메모리 반도체 및 HBM 공급" required />
+          </label>
+          <div class="add-stock-actions">
+            <button type="button" id="clearCustomStocksButton">추가 종목 초기화</button>
+            <button type="submit">종목 추가</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div id="chartModal" class="chart-modal" aria-hidden="true">
+      <section class="chart-modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalChartTitle">
+        <header class="modal-head">
+          <div>
+            <strong id="modalChartTitle">$NVDA 큰 차트</strong>
+            <span id="modalChartSubtitle">Yahoo Finance 실시간</span>
+          </div>
+          <button id="closeChartButton" type="button" aria-label="큰 차트 닫기">×</button>
+        </header>
+        <div class="modal-chart-wrap">
+          <canvas id="largePriceChart" width="1200" height="560" aria-label="선택 종목 큰 가격 차트"></canvas>
+        </div>
+        <div class="chart-metrics modal-metrics" id="modalChartMetrics"></div>
+      </section>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

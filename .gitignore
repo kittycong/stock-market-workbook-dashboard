@@ -1,0 +1,6 @@
+.vercel/
+node_modules/
+*.log
+qa-*.png
+.env
+.env.*
