@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const {
   fetchChartPayload,
+  fetchQuotesPayload,
   fetchGoogleNewsPayload,
   fetchNaverNewsPayload,
   getKoreanNewsFallback,
@@ -51,6 +52,15 @@ async function handleNews(request, response) {
       return;
     }
     sendJson(response, 502, { error: "news_fetch_failed", message: error.message, source, ticker });
+  }
+}
+
+async function handleQuotes(request, response) {
+  const url = new URL(request.url, `http://${request.headers.host}`);
+  try {
+    sendJson(response, 200, await fetchQuotesPayload(url.searchParams.get("tickers") || ""));
+  } catch (error) {
+    sendJson(response, 502, { error: "quotes_fetch_failed", message: error.message });
   }
 }
 
@@ -116,6 +126,10 @@ http
     }
     if (route === "/api/news") {
       handleNews(request, response);
+      return;
+    }
+    if (route === "/api/quotes") {
+      handleQuotes(request, response);
       return;
     }
     if (route === "/api/profile") {

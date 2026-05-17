@@ -123,6 +123,9 @@ const state = {
   chartRange: "1D",
   newsTicker: "all",
   liveChart: null,
+  liveQuotes: {},
+  liveQuoteErrors: {},
+  liveQuotesFetchedAt: null,
   liveNews: null,
   liveProfile: null,
   companyInfo: null,
@@ -341,6 +344,48 @@ async function fetchJson(url) {
   return response.json();
 }
 
+function formatQuotePrice(quote, fallback = "-") {
+  if (!quote || !Number.isFinite(quote.price)) return fallback;
+  const isKrw = quote.currency === "KRW" || quote.ticker?.endsWith(".KS") || quote.ticker?.endsWith(".KQ");
+  const symbol = isKrw ? "₩" : "$";
+  return `${symbol}${quote.price.toLocaleString(undefined, { maximumFractionDigits: isKrw ? 0 : 2 })}`;
+}
+
+function formatQuoteMove(quote, fallbackTicker = "") {
+  if (!quote || !Number.isFinite(quote.changeRate)) return { label: "연결 대기", tone: "" };
+  const signed = quote.changeRate >= 0 ? "+" : "";
+  return {
+    label: `${signed}${quote.changeRate.toFixed(2)}%`,
+    tone: quote.changeRate < 0 ? "down" : "up",
+  };
+}
+
+async function loadLiveQuotes(tickers = holdings.map((item) => item.ticker)) {
+  if (!state.liveMode) {
+    renderTickerTape();
+    renderBoard();
+    return;
+  }
+  try {
+    const uniqueTickers = [...new Set(tickers)].slice(0, 60);
+    const payload = await fetchJson(`/api/quotes?tickers=${encodeURIComponent(uniqueTickers.join(","))}`);
+    state.liveQuotes = { ...state.liveQuotes, ...(payload.quotes || {}) };
+    state.liveQuoteErrors = payload.errors || {};
+    state.liveQuotesFetchedAt = payload.fetchedAt;
+    renderTickerTape();
+    renderBoard();
+    const failed = Object.keys(state.liveQuoteErrors).length;
+    statusText.textContent = failed
+      ? `실시간 가격 ${Object.keys(payload.quotes || {}).length}개 연결 · 실패 ${failed}개`
+      : `실시간 가격 ${Object.keys(payload.quotes || {}).length}개 연결 완료`;
+  } catch (error) {
+    state.liveQuoteErrors = { all: error.message };
+    renderTickerTape();
+    renderBoard();
+    statusText.textContent = `실시간 가격 묶음 호출 실패 · ${error.message}`;
+  }
+}
+
 async function loadLiveChart() {
   if (!state.liveMode) {
     state.liveChart = null;
@@ -455,9 +500,10 @@ function renderTickerTape() {
   const tickers = ["NVDA", "MSFT", "AVGO", "NOW", "ORCL", "SNPS", "COST", "MSTR", "VOO", "GOVT"];
   tickerTape.innerHTML = tickers
     .map((ticker) => {
-      const move = seededMove(ticker);
-      const direction = Number(move) >= 0 ? "" : "down";
-      return `<div class="ticker-pill ${direction}">$${ticker}<em>${Number(move) >= 0 ? "+" : ""}${move}%</em></div>`;
+      const quote = state.liveQuotes[ticker];
+      const move = formatQuoteMove(quote, ticker);
+      const direction = move.tone === "down" ? "down" : "";
+      return `<div class="ticker-pill ${direction}">$${ticker}<em>${move.label}</em></div>`;
     })
     .join("");
 }
@@ -1022,13 +1068,14 @@ function renderTabs() {
 
 function renderCard(item) {
   const isStarred = state.starred.has(item.ticker);
-  const move = seededMove(item.ticker);
+  const quote = state.liveQuotes[item.ticker];
+  const move = formatQuoteMove(quote, item.ticker);
   return `
     <article class="stock-card" data-risk="${item.risk}">
       <div class="stock-top">
         <div>
           <div class="ticker">$${item.ticker}</div>
-          <div class="company">${item.company} · ${Number(move) >= 0 ? "+" : ""}${move}%</div>
+          <div class="company">${item.company} · ${formatQuotePrice(quote)} · ${move.label}</div>
         </div>
         <button class="star ${isStarred ? "active" : ""}" type="button" data-star="${item.ticker}" aria-label="${item.ticker} 관심 표시">★</button>
       </div>
@@ -1076,13 +1123,17 @@ function renderWatchRows(items) {
   watchCount.textContent = `${rows.length}개`;
   watchRows.innerHTML = rows
     .map(
-      (item) => `
+      (item) => {
+        const quote = state.liveQuotes[item.ticker];
+        const move = formatQuoteMove(quote, item.ticker);
+        return `
         <div class="watch-row" data-watch-ticker="${item.ticker}">
           <strong>$${item.ticker}</strong>
-          <span>${item.company}</span>
+          <span>${item.company} · ${formatQuotePrice(quote)} · ${move.label}</span>
           <i class="mini-risk ${item.risk}" aria-hidden="true"></i>
         </div>
-      `,
+      `;
+      },
     )
     .join("");
 }
@@ -1282,7 +1333,7 @@ document.querySelector("#clearButton").addEventListener("click", () => {
 });
 
 document.querySelector("#refreshButton").addEventListener("click", () => {
-  renderTickerTape();
+  loadLiveQuotes();
   loadLiveChart();
   loadLiveNews();
   statusText.textContent = state.liveMode ? "실시간 데이터 새로 고침 중..." : "파일 모드 · 샘플 데이터 새로 고침";
@@ -1399,12 +1450,14 @@ renderSelectors();
 renderTickerTape();
 renderChat();
 renderBoard();
+loadLiveQuotes();
 loadLiveChart();
 loadLiveNews();
 loadProfile();
 loadKospiQuant();
 loadFundFlow();
 setInterval(() => {
+  loadLiveQuotes();
   loadLiveChart();
   loadLiveNews();
   loadProfile();

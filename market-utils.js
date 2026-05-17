@@ -119,6 +119,48 @@ async function fetchChartPayload(tickerValue, requestedRange) {
   };
 }
 
+async function fetchQuotesPayload(tickerValues = []) {
+  const tickers = [...new Set(
+    (Array.isArray(tickerValues) ? tickerValues : String(tickerValues || "").split(","))
+      .map(safeTicker)
+      .filter(Boolean),
+  )].slice(0, 60);
+  const settled = await Promise.allSettled(
+    tickers.map(async (ticker) => {
+      const chart = await fetchChartPayload(ticker, "1D");
+      const price = chart.regularMarketPrice;
+      const previousClose = chart.previousClose;
+      const change = Number.isFinite(price) && Number.isFinite(previousClose) ? price - previousClose : 0;
+      const changeRate = previousClose ? (change / previousClose) * 100 : 0;
+      return {
+        ticker,
+        source: chart.source,
+        currency: chart.currency,
+        price,
+        previousClose,
+        change,
+        changeRate,
+        points: chart.points.length,
+        fetchedAt: chart.fetchedAt,
+      };
+    }),
+  );
+  const quotes = {};
+  const errors = {};
+  settled.forEach((result, index) => {
+    const ticker = tickers[index];
+    if (result.status === "fulfilled") quotes[ticker] = result.value;
+    else errors[ticker] = result.reason?.message || "quote fetch failed";
+  });
+  return {
+    source: "Yahoo Finance chart quote",
+    quotes,
+    errors,
+    requested: tickers.length,
+    fetchedAt: new Date().toISOString(),
+  };
+}
+
 async function fetchGoogleNewsPayload(tickerValue) {
   const ticker = safeTicker(tickerValue || "AI STOCKS");
   const query = ticker === "AI STOCKS" ? "AI stocks" : `${ticker} stock`;
@@ -370,6 +412,7 @@ async function fetchNaverCompanyInfoPayload(codeValue) {
 
 module.exports = {
   fetchChartPayload,
+  fetchQuotesPayload,
   fetchGoogleNewsPayload,
   fetchNaverNewsPayload,
   getKoreanNewsFallback,
