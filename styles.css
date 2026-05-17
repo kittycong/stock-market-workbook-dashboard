@@ -1768,6 +1768,26 @@ button {
   line-height: 1.45;
 }
 
+.chat-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 4px;
+  color: #718192;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.chat-ticker {
+  color: var(--excel);
+}
+
+.chat-text {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
 .chat-form {
   display: grid;
   grid-template-columns: 1fr 54px;

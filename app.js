@@ -115,6 +115,48 @@ const safeStore = {
   },
 };
 
+const NOTE_STORAGE_KEY = "portfolio-notes";
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function normalizeNote(note, index = 0) {
+  if (typeof note === "string") {
+    return {
+      id: `legacy-${index}`,
+      text: note,
+      createdAt: null,
+      ticker: null,
+    };
+  }
+
+  return {
+    id: note.id || `note-${index}`,
+    text: note.text || "",
+    createdAt: note.createdAt || null,
+    ticker: note.ticker || null,
+  };
+}
+
+function formatNoteTime(value) {
+  if (!value) return "기본 메모";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "저장됨";
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 const state = {
   category: "전체",
   risk: "all",
@@ -137,7 +179,7 @@ const state = {
   liveMode: location.protocol.startsWith("http"),
   customHoldings: safeStore.get("custom-holdings", []),
   starred: new Set(safeStore.get("portfolio-stars", [])),
-  notes: safeStore.get("portfolio-notes", []),
+  notes: safeStore.get(NOTE_STORAGE_KEY, []),
 };
 
 const board = document.querySelector("#kanbanBoard");
@@ -1140,12 +1182,22 @@ function renderWatchRows(items) {
 
 function renderChat() {
   const seedNotes = [
-    "AI 컴퓨팅은 NVDA, MSFT, AVGO가 중심.",
-    "NOW는 로봇/워크플로우 자동화 테마로 따로 추적.",
-    "MSTR, COIN, MARA는 움직임 클 수 있음.",
+    { id: "seed-ai", text: "AI 컴퓨팅은 NVDA, MSFT, AVGO가 중심.", createdAt: null, ticker: "AI" },
+    { id: "seed-now", text: "NOW는 로봇/워크플로우 자동화 테마로 따로 추적.", createdAt: null, ticker: "NOW" },
+    { id: "seed-risk", text: "MSTR, COIN, MARA는 움직임 클 수 있음.", createdAt: null, ticker: "RISK" },
   ];
-  const notes = [...seedNotes, ...state.notes].slice(-8);
-  chatBody.innerHTML = notes.map((note) => `<div class="chat-message">${note}</div>`).join("");
+  const notes = [...seedNotes, ...state.notes.map(normalizeNote)].slice(-10);
+  chatBody.innerHTML = notes
+    .map((note) => {
+      const ticker = note.ticker ? `<span class="chat-ticker">${escapeHtml(note.ticker)}</span>` : "";
+      return `
+        <div class="chat-message" data-note-id="${escapeHtml(note.id)}">
+          <div class="chat-meta">${ticker}<time>${escapeHtml(formatNoteTime(note.createdAt))}</time></div>
+          <div class="chat-text">${escapeHtml(note.text)}</div>
+        </div>
+      `;
+    })
+    .join("");
   chatBody.scrollTop = chatBody.scrollHeight;
 }
 
@@ -1435,12 +1487,19 @@ document.querySelectorAll(".tool-stack button, .tool.big").forEach((button) => {
 
 noteForm.addEventListener("submit", (event) => {
   event.preventDefault();
-  const note = noteInput.value.trim();
-  if (!note) return;
-  state.notes.push(note);
-  safeStore.set("portfolio-notes", state.notes);
+  const text = noteInput.value.trim();
+  if (!text) return;
+  const note = {
+    id: `note-${Date.now()}`,
+    text,
+    createdAt: new Date().toISOString(),
+    ticker: state.selectedTicker,
+  };
+  state.notes = [...state.notes.map(normalizeNote), note].slice(-50);
+  safeStore.set(NOTE_STORAGE_KEY, state.notes);
   noteInput.value = "";
   renderChat();
+  statusText.textContent = `메모 저장됨 · $${state.selectedTicker} · 브라우저에 자동 반영`;
 });
 
 rebuildHoldings();
