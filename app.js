@@ -246,6 +246,7 @@ const totalScore = document.querySelector("#totalScore");
 const scoreBars = document.querySelector("#scoreBars");
 const profileFacts = document.querySelector("#profileFacts");
 const profileNotes = document.querySelector("#profileNotes");
+const investingMini = document.querySelector("#investingMini");
 const technicalSubtitle = document.querySelector("#technicalSubtitle");
 const customQuoteRows = document.querySelector("#customQuoteRows");
 const indicatorBlocks = document.querySelector("#indicatorBlocks");
@@ -977,7 +978,7 @@ function renderThemeList() {
           <td>${item.rank || ""}</td>
           <td class="theme-name"><strong>${item.name}</strong><span>${item.themeIdx ? `themeIdx ${item.themeIdx}` : "Judal Theme"}</span></td>
           <td class="${changeTone}">${item.changeRate}</td>
-          <td class="${threeDayTone}">${item.threeDay}</td>
+          <td><span class="theme-three-day ${threeDayTone}">${item.threeDay}</span></td>
           <td>${item.week52Up}</td>
           <td>${item.year3Up}</td>
           <td class="kospi-up"><strong>${item.expectedReturn}</strong></td>
@@ -1045,6 +1046,63 @@ function openNewsPopup(row) {
   } else {
     statusText.textContent = "팝업이 차단되었습니다. 브라우저에서 팝업 허용을 켜주세요.";
   }
+}
+
+function renderInvestingMini(profile, company) {
+  if (!investingMini) return;
+  const score = Number(profile.scores.total) || 60;
+  const buy = Math.max(1, Math.round(score / 10));
+  const sell = Math.max(0, Math.round((100 - score) / 14));
+  const hold = Math.max(1, 14 - buy - sell);
+  const opinion = score >= 75 ? "매수 우위" : score <= 45 ? "매도 우위" : "중립";
+  const expectedGap = score >= 75 ? "+12.4%" : score <= 45 ? "-8.6%" : "+2.1%";
+  const marketBasis = company?.marketCap && company.marketCap !== "N/A" ? company.marketCap : "스냅샷";
+  const dividend = company?.dividend && company.dividend !== "N/A" ? company.dividend : "확인 필요";
+  const cashFlowBasis = profile.valuation.fcfYield || "확인 필요";
+  const netIncomeTrend = score >= 70 ? "개선" : score <= 45 ? "둔화" : "혼조";
+  const bars = [
+    { label: "매수", value: buy, className: "buy" },
+    { label: "보유", value: hold, className: "hold" },
+    { label: "매도", value: sell, className: "sell" },
+  ];
+
+  investingMini.innerHTML = `
+    <article class="investing-card analyst-card">
+      <header><strong>투자의견 모델</strong><span>공식 리포트 아님</span></header>
+      <div class="analyst-donut" style="--buy:${buy};--hold:${hold};--sell:${sell};"><b>${buy + hold + sell}</b></div>
+      <div class="analyst-bars">
+        ${bars.map((item) => `<span class="${item.className}"><i></i>${item.value} ${item.label}</span>`).join("")}
+      </div>
+      <p>점수 기반 방향성 <b class="${expectedGap.includes("-") ? "mini-down" : "mini-up"}">${opinion}</b></p>
+    </article>
+    <article class="investing-card">
+      <header><strong>실적/가치 스냅샷</strong><span>연동 요약</span></header>
+      <dl>
+        <div><dt>시총 / 기준</dt><dd>${marketBasis}</dd></div>
+        <div><dt>FCF Yield</dt><dd>${cashFlowBasis}</dd></div>
+        <div><dt>손익 흐름</dt><dd>${netIncomeTrend}</dd></div>
+      </dl>
+    </article>
+    <article class="investing-card">
+      <header><strong>배당</strong><span>공시 확인 필요</span></header>
+      <dl>
+        <div><dt>배당수익률</dt><dd>${dividend}</dd></div>
+        <div><dt>PER / PBR</dt><dd>${profile.valuation.per} / ${profile.valuation.pbr}</dd></div>
+        <div><dt>ROE / 부채</dt><dd>${profile.quality.roe} / ${profile.quality.debt}</dd></div>
+      </dl>
+    </article>
+    <article class="investing-card mini-income">
+      <header><strong>손익 계산서</strong><span>요약</span></header>
+      <div class="mini-bars" aria-hidden="true">
+        <i style="height:${Math.max(28, Math.min(86, profile.scores.momentum))}%"></i>
+        <i style="height:${Math.max(28, Math.min(86, profile.scores.quality))}%"></i>
+        <i style="height:${Math.max(28, Math.min(86, profile.scores.value))}%"></i>
+        <i style="height:${Math.max(28, Math.min(86, 100 - profile.scores.risk))}%"></i>
+      </div>
+      <p>매출 · 이익 · 가치 · 리스크 압축 보기</p>
+    </article>
+    <div class="investing-disclaimer">Investing.com 화면을 참고한 축약 UI입니다. 현재 값은 네이버/야후/로컬 퀀트 기반 요약이며 실제 Investing 애널리스트 원문값이 아닙니다. 투자 판단 전 공시, 리포트, 거래소 데이터를 재확인하세요.</div>
+  `;
 }
 
 function renderProfile() {
@@ -1130,6 +1188,7 @@ function renderProfile() {
     <p>${profile.checklist.join(" · ")}</p>
     <div class="profile-chip-list">${profile.peers.map((item) => `<span class="profile-chip">비교 ${item}</span>`).join("")}</div>
   `;
+  renderInvestingMini(profile, company);
 }
 
 function selectTicker(ticker, options = {}) {

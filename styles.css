@@ -922,6 +922,169 @@ button {
   color: #9d3030;
 }
 
+.investing-mini {
+  display: grid;
+  grid-template-columns: 1.05fr repeat(3, minmax(160px, 1fr));
+  gap: 8px;
+  padding: 0 10px 10px;
+}
+
+.investing-card {
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #d7e1e8;
+  background: #fff;
+}
+
+.investing-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #edf2f6;
+}
+
+.investing-card header strong {
+  color: #142431;
+  font-size: 12px;
+}
+
+.investing-card header span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.analyst-card {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  column-gap: 10px;
+}
+
+.analyst-card header,
+.analyst-card p {
+  grid-column: 1 / -1;
+}
+
+.analyst-donut {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at center, #fff 0 52%, transparent 53%),
+    conic-gradient(#e00000 0 calc(var(--buy) * 25.714deg), #d7dfe6 0 calc((var(--buy) + var(--hold)) * 25.714deg), #0076d7 0);
+}
+
+.analyst-donut b {
+  font-size: 12px;
+}
+
+.analyst-bars {
+  display: grid;
+  gap: 4px;
+  align-content: center;
+  color: #354757;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.analyst-bars span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.analyst-bars i {
+  width: 9px;
+  height: 9px;
+  display: inline-block;
+  background: #d7dfe6;
+}
+
+.analyst-bars .buy i {
+  background: #e00000;
+}
+
+.analyst-bars .sell i {
+  background: #0076d7;
+}
+
+.investing-card dl {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.investing-card dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #edf2f6;
+}
+
+.investing-card dt {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.investing-card dd {
+  margin: 0;
+  color: #111c26;
+  font-size: 12px;
+  font-weight: 900;
+  text-align: right;
+}
+
+.investing-card p,
+.investing-disclaimer {
+  margin: 7px 0 0;
+  color: #526779;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.mini-up {
+  color: #e00000;
+}
+
+.mini-down {
+  color: #0076d7;
+}
+
+.mini-bars {
+  height: 72px;
+  display: flex;
+  align-items: end;
+  justify-content: space-around;
+  gap: 8px;
+  padding: 6px 4px 0;
+  border-bottom: 1px solid #edf2f6;
+}
+
+.mini-bars i {
+  width: 18px;
+  display: block;
+  background: #0b72e7;
+}
+
+.mini-bars i:nth-child(3) {
+  background: #f0a12b;
+}
+
+.investing-disclaimer {
+  grid-column: 1 / -1;
+  margin-top: -2px;
+  padding: 6px 8px;
+  border: 1px solid #ead09a;
+  background: #fff9e8;
+}
+
 .technical-panel {
   margin-bottom: 10px;
   background: rgba(255, 255, 255, 0.98);
@@ -1327,7 +1490,7 @@ button {
 
 .theme-table {
   width: 100%;
-  min-width: 1120px;
+  min-width: 1260px;
   border-collapse: collapse;
   table-layout: fixed;
   font-size: 12px;
@@ -1358,19 +1521,19 @@ button {
 
 .theme-table th:nth-child(1),
 .theme-table td:nth-child(1) {
-  width: 52px;
+  width: 44px;
   text-align: center;
 }
 
 .theme-table th:nth-child(2),
 .theme-table td:nth-child(2) {
-  width: 190px;
+  width: 150px;
   text-align: left;
 }
 
 .theme-table th:nth-child(10),
 .theme-table td:nth-child(10) {
-  width: 300px;
+  width: 420px;
   text-align: left;
 }
 
@@ -1418,19 +1581,44 @@ button {
 .theme-name strong {
   display: block;
   color: #075ca8;
-  font-size: 13px;
+  font-size: 11px;
+  line-height: 1.25;
 }
 
 .theme-name span,
 .theme-memo {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .theme-memo {
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  line-height: 1.35;
+}
+
+.theme-three-day {
+  min-width: 58px;
+  display: inline-flex;
+  justify-content: center;
+  padding: 3px 6px;
+  border: 1px solid #d7e1e8;
+  background: #f6f9fb;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.theme-three-day.kospi-up {
+  border-color: #f0b4b4;
+  background: #fff0f0;
+}
+
+.theme-three-day.kospi-down {
+  border-color: #a8d3f3;
+  background: #eef7ff;
 }
 
 .fund-name strong {
@@ -2075,6 +2263,10 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .investing-mini {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+
   .technical-grid {
     grid-template-columns: 1fr;
   }
@@ -2169,6 +2361,10 @@ button {
   }
 
   .profile-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .investing-mini {
     grid-template-columns: 1fr;
   }
 
