@@ -953,7 +953,7 @@ function renderNews() {
       .map((item) => {
         const headline = item.title.replace(/\s+-\s+[^-]+$/, "");
         return `
-          <tr class="${state.liveNews.ticker === state.selectedTicker ? "active" : ""}" data-news-ticker="${state.liveNews.ticker}" data-news-link="${item.link}">
+          <tr class="${state.liveNews.ticker === state.selectedTicker ? "active" : ""}" data-news-ticker="${state.liveNews.ticker}" data-news-link="${escapeHtml(item.link || "")}" data-news-headline="${escapeHtml(headline)}">
             <td>${formatClock(item.pubDate)}</td>
             <td class="news-ticker">$${state.liveNews.ticker}</td>
             <td>${item.source || "뉴스"}</td>
@@ -970,7 +970,7 @@ function renderNews() {
   newsRows.innerHTML = rows
     .map(
       (item) => `
-        <tr class="${item.ticker === state.selectedTicker ? "active" : ""}" data-news-ticker="${item.ticker}">
+        <tr class="${item.ticker === state.selectedTicker ? "active" : ""}" data-news-ticker="${item.ticker}" data-news-headline="${escapeHtml(item.headline)}">
           <td>${item.time}</td>
           <td class="news-ticker">$${item.ticker}</td>
           <td>${item.type}</td>
@@ -980,6 +980,20 @@ function renderNews() {
       `,
     )
     .join("");
+}
+
+function openNewsPopup(row) {
+  const ticker = row.dataset.newsTicker || state.selectedTicker;
+  const headline = row.dataset.newsHeadline || ticker;
+  const fallbackUrl = `https://news.google.com/search?q=${encodeURIComponent(`${ticker} ${headline}`)}&hl=ko&gl=KR&ceid=KR:ko`;
+  const url = row.dataset.newsLink || fallbackUrl;
+  const popup = window.open(url, "marketWorkbookNews", "popup=yes,width=1040,height=760,menubar=yes,toolbar=yes,scrollbars=yes,resizable=yes");
+  if (popup) {
+    popup.focus();
+    statusText.textContent = `$${ticker} 뉴스 팝업 열림`;
+  } else {
+    statusText.textContent = "팝업이 차단되었습니다. 브라우저에서 팝업 허용을 켜주세요.";
+  }
 }
 
 function renderProfile() {
@@ -1403,6 +1417,7 @@ newsRows.addEventListener("click", (event) => {
   const row = event.target.closest("[data-news-ticker]");
   if (!row) return;
   selectTicker(row.dataset.newsTicker);
+  openNewsPopup(row);
 });
 
 chartTickerSelect.addEventListener("change", (event) => {
