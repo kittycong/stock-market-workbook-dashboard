@@ -185,17 +185,17 @@ button {
   display: grid;
   grid-template-columns: repeat(4, minmax(82px, 1fr));
   gap: 4px;
-  align-content: start;
+  align-content: stretch;
   padding-left: 10px;
   border-left: 1px solid var(--line);
 }
 
 .macro-pill {
   min-width: 0;
-  height: 38px;
+  height: 46px;
   display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-rows: 14px 16px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: 16px 20px;
   align-items: center;
   column-gap: 5px;
   border: 1px solid #d7dfe6;
@@ -209,7 +209,7 @@ button {
 .macro-pill span {
   min-width: 0;
   color: #405365;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -220,7 +220,7 @@ button {
   grid-column: 1 / -1;
   min-width: 0;
   color: #07111b;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 900;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -228,17 +228,34 @@ button {
 }
 
 .macro-pill em {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 58px;
+  min-width: 0;
+  height: 15px;
+  padding: 0 4px;
+  border: 1px solid #d7dfe6;
+  background: #f6f9fb;
   color: #5b6670;
   font-size: 10px;
   font-style: normal;
   font-weight: 900;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .macro-pill.up em {
+  border-color: #f0b4b4;
+  background: #fff0f0;
   color: #e00000;
 }
 
 .macro-pill.down em {
+  border-color: #a8d3f3;
+  background: #eef7ff;
   color: #0076d7;
 }
 
@@ -344,6 +361,11 @@ button {
   background: var(--green-soft);
   color: var(--excel-dark);
   font-weight: 800;
+}
+
+.sheet-sidebar button:nth-child(10) {
+  color: #8a6100;
+  font-weight: 900;
 }
 
 .sheet-frame {
@@ -1583,6 +1605,11 @@ button {
   box-shadow:
     inset 3px 0 0 var(--excel),
     0 0 0 2px rgba(33, 115, 70, 0.16);
+}
+
+.stock-card.empty-card {
+  border-style: dashed;
+  background: #fafcfd;
 }
 
 .stock-top {

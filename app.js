@@ -174,6 +174,7 @@ const state = {
   category: "전체",
   risk: "all",
   query: "",
+  favoritesOnly: false,
   selectedTicker: "NVDA",
   chartRange: "1D",
   newsTicker: "all",
@@ -444,11 +445,12 @@ function renderMacroStrip() {
       const quote = state.macroQuotes[item.ticker];
       const move = formatQuoteMove(quote, item.ticker);
       const tone = move.tone === "down" ? "down" : move.tone === "up" ? "up" : "";
+      const arrow = move.tone === "down" ? "▼" : move.tone === "up" ? "▲" : "–";
+      const moveLabel = move.label === "연결 대기" ? "대기" : move.label;
       return `
         <button class="macro-pill ${tone}" type="button" data-macro-ticker="${item.ticker}" title="${item.ticker}">
-          <span>${item.label}</span>
+          <span>${item.label}</span><em aria-label="${move.label}">${arrow} ${moveLabel}</em>
           <strong>${formatMacroValue(item, quote)}</strong>
-          <em>${move.label}</em>
         </button>
       `;
     })
@@ -598,7 +600,8 @@ function getFilteredHoldings() {
     const matchesQuery = !query || haystack.includes(query);
     const matchesCategory = state.category === "전체" || item.category === state.category;
     const matchesRisk = state.risk === "all" || item.risk === state.risk;
-    return matchesQuery && matchesCategory && matchesRisk;
+    const matchesFavorite = !state.favoritesOnly || state.starred.has(item.ticker);
+    return matchesQuery && matchesCategory && matchesRisk && matchesFavorite;
   });
 }
 
@@ -1189,7 +1192,7 @@ function renderStats(items) {
   const individualCount = items.filter((item) => item.risk !== "etf").length;
   const etfCount = items.filter((item) => item.risk === "etf").length;
   const volatileCount = items.filter((item) => item.risk === "volatile").length;
-  const starredCount = items.filter((item) => state.starred.has(item.ticker)).length;
+  const starredCount = holdings.filter((item) => state.starred.has(item.ticker)).length;
   const topTheme = categories
     .map((category) => [category, items.filter((item) => item.category === category).length])
     .sort((a, b) => b[1] - a[1])[0];
@@ -1204,14 +1207,14 @@ function renderStats(items) {
     .map(([label, value]) => `<div class="stat"><span>${label}</span><strong>${value}</strong></div>`)
     .join("");
 
-  statusText.textContent = `${topTheme?.[0] || "전체"} · ${items.length}개 표시 · 매수/매도 추천 아님`;
+  statusText.textContent = `${state.favoritesOnly ? "즐겨찾기" : topTheme?.[0] || "전체"} · ${items.length}개 표시 · 매수/매도 추천 아님`;
 }
 
 function renderTabs() {
-  const tabItems = ["전체", ...categories];
+  const tabItems = ["전체", "★ 즐겨찾기", ...categories];
   tabs.innerHTML = tabItems
     .map((category) => {
-      const active = category === state.category ? "active" : "";
+      const active = category === "★ 즐겨찾기" ? state.favoritesOnly : category === state.category && !state.favoritesOnly;
       return `<button class="${active}" type="button" data-category="${category}">${category}</button>`;
     })
     .join("");
@@ -1245,6 +1248,9 @@ function renderBoard() {
   renderStats(items);
   renderTabs();
   renderWatchRows(items);
+  const emptyMessage = state.favoritesOnly
+    ? "아직 즐겨찾기 종목이 없습니다. 별표를 누르거나 코스피/연기금 종목을 클릭해 저장하세요."
+    : "조건에 맞는 종목이 없습니다.";
 
   const visibleCategories =
     state.category === "전체"
@@ -1259,7 +1265,7 @@ function renderBoard() {
             <h2>${category}<span>${categoryItems.length}</span></h2>
           </header>
           <div class="cards">
-            ${categoryItems.length ? categoryItems.map(renderCard).join("") : `<article class="stock-card"><p class="description">조건에 맞는 종목이 없습니다.</p></article>`}
+            ${categoryItems.length ? categoryItems.map(renderCard).join("") : `<article class="stock-card empty-card"><p class="description">${emptyMessage}</p></article>`}
           </div>
         </section>
       `;
@@ -1313,22 +1319,24 @@ function renderChat() {
 
 function applyPreset(preset) {
   const presets = {
-    all: { category: "전체", risk: "all", query: "" },
-    now: { category: "전체", risk: "all", query: "NOW" },
-    ai: { category: "AI / 빅테크 / 클라우드", risk: "all", query: "" },
-    semis: { category: "반도체 / AI 인프라", risk: "all", query: "" },
-    etf: { category: "ETF / 자산배분", risk: "all", query: "" },
-    volatile: { category: "전체", risk: "volatile", query: "" },
-    crypto: { category: "금융 / 크립토 / 데이터", risk: "volatile", query: "" },
-    strongBuy: { category: "전체", risk: "all", query: "" },
-    strongSell: { category: "전체", risk: "all", query: "" },
-    kospi: { category: "전체", risk: "all", query: "" },
-    fund: { category: "전체", risk: "all", query: "" },
+    all: { category: "전체", risk: "all", query: "", favoritesOnly: false },
+    favorites: { category: "전체", risk: "all", query: "", favoritesOnly: true },
+    now: { category: "전체", risk: "all", query: "NOW", favoritesOnly: false },
+    ai: { category: "AI / 빅테크 / 클라우드", risk: "all", query: "", favoritesOnly: false },
+    semis: { category: "반도체 / AI 인프라", risk: "all", query: "", favoritesOnly: false },
+    etf: { category: "ETF / 자산배분", risk: "all", query: "", favoritesOnly: false },
+    volatile: { category: "전체", risk: "volatile", query: "", favoritesOnly: false },
+    crypto: { category: "금융 / 크립토 / 데이터", risk: "volatile", query: "", favoritesOnly: false },
+    strongBuy: { category: "전체", risk: "all", query: "", favoritesOnly: false },
+    strongSell: { category: "전체", risk: "all", query: "", favoritesOnly: false },
+    kospi: { category: "전체", risk: "all", query: "", favoritesOnly: false },
+    fund: { category: "전체", risk: "all", query: "", favoritesOnly: false },
   };
   const next = presets[preset] || presets.all;
   state.category = next.category;
   state.risk = next.risk;
   state.query = next.query;
+  state.favoritesOnly = Boolean(next.favoritesOnly);
   searchInput.value = state.query;
   riskSelect.value = state.risk;
   renderBoard();
@@ -1356,6 +1364,11 @@ function setActiveButton(container, button) {
 tabs.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-category]");
   if (!button) return;
+  if (button.dataset.category === "★ 즐겨찾기") {
+    applyPreset("favorites");
+    return;
+  }
+  state.favoritesOnly = false;
   state.category = button.dataset.category;
   renderBoard();
 });
@@ -1369,6 +1382,7 @@ board.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-star]");
   if (!button) return;
   const ticker = button.dataset.star;
+  const willSave = !state.starred.has(ticker);
   if (state.starred.has(ticker)) {
     state.starred.delete(ticker);
   } else {
@@ -1376,6 +1390,7 @@ board.addEventListener("click", (event) => {
   }
   safeStore.set("portfolio-stars", [...state.starred]);
   renderBoard();
+  statusText.textContent = willSave ? `$${ticker} 즐겨찾기 저장 · 즐겨찾기 메뉴에서 확인 가능` : `$${ticker} 즐겨찾기 해제`;
 });
 
 watchRows.addEventListener("click", (event) => {
@@ -1489,6 +1504,7 @@ document.querySelector("#clearButton").addEventListener("click", () => {
   state.category = "전체";
   state.risk = "all";
   state.query = "";
+  state.favoritesOnly = false;
   searchInput.value = "";
   riskSelect.value = "all";
   renderBoard();
@@ -1519,6 +1535,7 @@ document.querySelector(".sheet-sidebar").addEventListener("click", (event) => {
   else if (label.includes("반도체")) applyPreset("semis");
   else if (label.includes("ETF")) applyPreset("etf");
   else if (label.includes("고변동")) applyPreset("volatile");
+  else if (label.includes("즐겨찾기")) applyPreset("favorites");
   else if (label.includes("코스피 상위")) applyPreset("kospi");
   else if (label.includes("연기금")) applyPreset("fund");
   else if (label.includes("적극 매수")) applyPreset("strongBuy");
@@ -1533,6 +1550,7 @@ document.querySelector(".sheet-tabs").addEventListener("click", (event) => {
   const label = button.textContent.trim();
   if (label === "코인") applyPreset("crypto");
   else if (label === "ETF") applyPreset("etf");
+  else if (label === "즐겨찾기") applyPreset("favorites");
   else if (label === "코스피상위") applyPreset("kospi");
   else if (label === "연기금") applyPreset("fund");
   else if (label === "적극매수") applyPreset("strongBuy");
