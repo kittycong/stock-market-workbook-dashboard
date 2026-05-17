@@ -359,6 +359,14 @@ button {
   letter-spacing: 0;
 }
 
+.market-brief h1 span {
+  margin-left: 8px;
+  color: #2f5f87;
+  font-size: 0.62em;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .market-brief p {
   margin: 0;
   color: #526779;

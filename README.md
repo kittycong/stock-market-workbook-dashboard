@@ -1,4 +1,4 @@
-# SY Market Workbook
+# 마켓 워크북 | Market Workbook
 
 Excel/Outlook 스타일의 종목 대시보드입니다.
 
