@@ -1,4 +1,5 @@
 const categories = [
+  "국내 주식 / 코스피",
   "AI / 빅테크 / 클라우드",
   "반도체 / AI 인프라",
   "기업 SW / SaaS / 보안",
@@ -257,6 +258,10 @@ function seededMove(ticker) {
 
 function normalizeTicker(value) {
   return String(value || "").trim().toUpperCase().replace(/\s+/g, "");
+}
+
+function isKoreanTicker(ticker) {
+  return /\.(KS|KQ)$/.test(normalizeTicker(ticker));
 }
 
 function rebuildHoldings() {
@@ -567,6 +572,14 @@ function renderSelectors() {
   newsTickerSelect.value = state.newsTicker;
 }
 
+function getTechnicalSummaryTickers() {
+  return [state.selectedTicker, ...state.starred, "NVDA", "MSFT", "000660.KS", "AVGO"]
+    .map(normalizeTicker)
+    .filter(Boolean)
+    .filter((ticker, index, arr) => arr.indexOf(ticker) === index)
+    .slice(0, 6);
+}
+
 function getChartSnapshot() {
   const hasMatchingLiveChart = state.liveChart?.ticker === state.selectedTicker && state.liveChart?.range === state.chartRange;
   const liveOhlc = hasMatchingLiveChart ? state.liveChart.points?.filter((point) => Number.isFinite(point.close)) : null;
@@ -690,9 +703,7 @@ function renderChart() {
 
 function renderTechnical(snapshot = getChartSnapshot()) {
   const selectedFrames = timeframeChecks.filter((input) => input.checked).map((input) => input.value);
-  const rows = [state.selectedTicker, "NVDA", "MSFT", "000660.KS", "AVGO"]
-    .filter((ticker, index, arr) => arr.indexOf(ticker) === index)
-    .slice(0, 5);
+  const rows = getTechnicalSummaryTickers();
   customQuoteRows.innerHTML = rows
     .map((ticker) => {
       const company = holdings.find((item) => item.ticker === ticker)?.company || ticker;
@@ -709,7 +720,7 @@ function renderTechnical(snapshot = getChartSnapshot()) {
         return `<td class="${signalClass(signal)}">${signal}</td>`;
       });
       return `
-        <tr><td rowspan="3"><strong>$${ticker}</strong><br><span>${company}</span></td><td>이동평균:</td>${maCells.join("")}</tr>
+        <tr class="${ticker === state.selectedTicker ? "active" : ""}"><td rowspan="3"><strong>$${ticker}</strong><br><span>${company}</span></td><td>이동평균:</td>${maCells.join("")}</tr>
         <tr><td>지표:</td>${indCells.join("")}</tr>
         <tr><td><strong>요약:</strong></td>${summaryCells.join("")}</tr>
       `;
@@ -809,7 +820,7 @@ function renderKospiQuant() {
       const isUp = String(item.changeRate).includes("+") || !String(item.changeRate).includes("-");
       const tone = String(item.changeRate) === "-" ? "" : isUp ? "kospi-up" : "kospi-down";
       return `
-        <tr data-kospi-ticker="${item.ticker}" data-kospi-name="${item.name}">
+        <tr class="${item.ticker === state.selectedTicker ? "active" : ""}" data-kospi-ticker="${item.ticker}" data-kospi-name="${item.name}">
           <td>${item.rank || ""}</td>
           <td class="kospi-name"><strong>${item.name}</strong><span>${item.ticker}</span></td>
           <td>${item.price}</td>
@@ -844,7 +855,7 @@ function renderFundFlow() {
     .map((item) => {
       const tone = String(item.changeRate).includes("-") ? "kospi-down" : String(item.changeRate) === "-" ? "" : "kospi-up";
       return `
-        <tr data-fund-ticker="${item.ticker}" data-fund-name="${item.name}">
+        <tr class="${item.ticker === state.selectedTicker ? "active" : ""}" data-fund-ticker="${item.ticker}" data-fund-name="${item.name}">
           <td>${item.rank || ""}</td>
           <td class="fund-name"><strong>${item.name}</strong><span>${item.market || "KRX"} ${item.code}</span></td>
           <td><strong>${item.amount}</strong></td>
@@ -990,14 +1001,38 @@ function renderProfile() {
   `;
 }
 
-function selectTicker(ticker) {
-  ensureHolding(ticker);
-  state.selectedTicker = ticker;
-  chartTickerSelect.value = ticker;
+function selectTicker(ticker, options = {}) {
+  const normalized = normalizeTicker(ticker);
+  if (!normalized) return;
+  ensureHolding(normalized, options.company);
+  state.selectedTicker = normalized;
+  state.newsTicker = "all";
+  newsTickerSelect.value = "all";
+  chartTickerSelect.value = normalized;
+
+  if (options.autoFavorite) {
+    state.starred.add(normalized);
+    safeStore.set("portfolio-stars", [...state.starred]);
+  }
+
+  if (options.pinToDashboard) {
+    state.category = "전체";
+    state.risk = "all";
+    state.query = normalized;
+    searchInput.value = normalized;
+    riskSelect.value = "all";
+  }
+
+  renderSelectors();
+  renderBoard();
+  renderKospiQuant();
+  renderFundFlow();
+  renderTechnical();
   loadLiveChart();
   loadLiveNews();
   loadProfile();
-  statusText.textContent = `$${ticker} 차트 선택 · 뉴스피드 연동`;
+  const favoriteText = options.autoFavorite ? " · 즐겨찾기 저장" : "";
+  statusText.textContent = `$${normalized} 선택${favoriteText} · 차트/맞춤시세/캔들/프로필 동시 반영`;
 }
 
 function openLargeChart() {
@@ -1061,12 +1096,22 @@ function addCustomHolding(formData) {
 
 function ensureHolding(ticker, company = "") {
   const normalized = normalizeTicker(ticker);
-  if (holdings.some((item) => item.ticker === normalized)) return;
+  if (!normalized) return;
+  if (holdings.some((item) => item.ticker === normalized)) {
+    if (company) {
+      state.customHoldings = state.customHoldings.map((item) =>
+        normalizeTicker(item.ticker) === normalized ? { ...item, company: item.company || company } : item,
+      );
+      safeStore.set("custom-holdings", state.customHoldings);
+      rebuildHoldings();
+    }
+    return;
+  }
   state.customHoldings.push({
     ticker: normalized,
     company: company || normalized,
     description: "외부 표에서 자동 추가된 종목",
-    category: normalized.endsWith(".KS") || normalized.endsWith(".KQ") ? "산업 / 국방 / 인프라" : "AI / 빅테크 / 클라우드",
+    category: isKoreanTicker(normalized) ? "국내 주식 / 코스피" : "AI / 빅테크 / 클라우드",
     risk: "growth",
     score: 3,
     custom: true,
@@ -1110,10 +1155,11 @@ function renderTabs() {
 
 function renderCard(item) {
   const isStarred = state.starred.has(item.ticker);
+  const isSelected = state.selectedTicker === item.ticker;
   const quote = state.liveQuotes[item.ticker];
   const move = formatQuoteMove(quote, item.ticker);
   return `
-    <article class="stock-card" data-risk="${item.risk}">
+    <article class="stock-card ${isSelected ? "selected" : ""}" data-risk="${item.risk}" data-card-ticker="${item.ticker}">
       <div class="stock-top">
         <div>
           <div class="ticker">$${item.ticker}</div>
@@ -1169,7 +1215,7 @@ function renderWatchRows(items) {
         const quote = state.liveQuotes[item.ticker];
         const move = formatQuoteMove(quote, item.ticker);
         return `
-        <div class="watch-row" data-watch-ticker="${item.ticker}">
+        <div class="watch-row ${item.ticker === state.selectedTicker ? "active" : ""}" data-watch-ticker="${item.ticker}">
           <strong>$${item.ticker}</strong>
           <span>${item.company} · ${formatQuotePrice(quote)} · ${move.label}</span>
           <i class="mini-risk ${item.risk}" aria-hidden="true"></i>
@@ -1253,7 +1299,7 @@ tabs.addEventListener("click", (event) => {
 board.addEventListener("click", (event) => {
   const card = event.target.closest(".stock-card");
   if (card && !event.target.closest("button")) {
-    const ticker = card.querySelector(".ticker")?.textContent.replace("$", "");
+    const ticker = card.dataset.cardTicker || card.querySelector(".ticker")?.textContent.replace("$", "");
     if (ticker) selectTicker(ticker);
   }
   const button = event.target.closest("button[data-star]");
@@ -1443,8 +1489,11 @@ refreshKospiButton.addEventListener("click", () => {
 kospiRows.addEventListener("click", (event) => {
   const row = event.target.closest("[data-kospi-ticker]");
   if (!row) return;
-  ensureHolding(row.dataset.kospiTicker, row.dataset.kospiName);
-  selectTicker(row.dataset.kospiTicker);
+  selectTicker(row.dataset.kospiTicker, {
+    company: row.dataset.kospiName,
+    autoFavorite: true,
+    pinToDashboard: true,
+  });
 });
 
 fundFlowControls.addEventListener("click", (event) => {
@@ -1461,8 +1510,11 @@ refreshFundFlowButton.addEventListener("click", () => {
 fundFlowRows.addEventListener("click", (event) => {
   const row = event.target.closest("[data-fund-ticker]");
   if (!row) return;
-  ensureHolding(row.dataset.fundTicker, row.dataset.fundName);
-  selectTicker(row.dataset.fundTicker);
+  selectTicker(row.dataset.fundTicker, {
+    company: row.dataset.fundName,
+    autoFavorite: true,
+    pinToDashboard: true,
+  });
 });
 
 document.querySelector(".tabs").addEventListener("click", (event) => {

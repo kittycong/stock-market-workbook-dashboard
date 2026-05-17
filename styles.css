@@ -917,6 +917,11 @@ button {
   font-weight: 900;
 }
 
+.technical-table tbody tr.active td {
+  background: #eaf4ef;
+  box-shadow: inset 3px 0 0 var(--excel);
+}
+
 .technical-table td:first-child,
 .technical-table th:first-child,
 .technical-table td:nth-child(2),
@@ -1142,6 +1147,11 @@ button {
   background: #eaf4ef;
 }
 
+.kospi-table tbody tr.active {
+  background: #eaf4ef;
+  box-shadow: inset 3px 0 0 var(--excel);
+}
+
 .kospi-name strong {
   display: block;
   color: #075ca8;
@@ -1251,6 +1261,11 @@ button {
 
 .fund-flow-table tbody tr:hover {
   background: #eaf4ef;
+}
+
+.fund-flow-table tbody tr.active {
+  background: #eaf4ef;
+  box-shadow: inset 3px 0 0 var(--excel);
 }
 
 .fund-name strong {
@@ -1499,6 +1514,14 @@ button {
   border-color: #6aa37e;
 }
 
+.stock-card.selected {
+  border-color: var(--excel);
+  background: #f2fbf6;
+  box-shadow:
+    inset 3px 0 0 var(--excel),
+    0 0 0 2px rgba(33, 115, 70, 0.16);
+}
+
 .stock-top {
   display: flex;
   justify-content: space-between;
@@ -1617,6 +1640,12 @@ button {
   padding: 6px 8px;
   border-bottom: 1px solid #e5ebf0;
   font-size: 12px;
+  cursor: pointer;
+}
+
+.watch-row:hover,
+.watch-row.active {
+  background: #eaf4ef;
 }
 
 .watch-row strong {
