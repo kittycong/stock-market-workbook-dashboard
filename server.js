@@ -10,7 +10,7 @@ const {
   fetchNaverQuantPayload,
   fetchJudalFundFlowPayload,
   fetchNaverCompanyInfoPayload,
-  getProfilePayload,
+  getDynamicProfilePayload,
 } = require("./market-utils");
 
 const PORT = Number(process.env.PORT || 4173);
@@ -64,9 +64,13 @@ async function handleQuotes(request, response) {
   }
 }
 
-function handleProfile(request, response) {
+async function handleProfile(request, response) {
   const url = new URL(request.url, `http://${request.headers.host}`);
-  sendJson(response, 200, getProfilePayload(url.searchParams.get("ticker") || "NVDA"));
+  try {
+    sendJson(response, 200, await getDynamicProfilePayload(url.searchParams.get("ticker") || "NVDA"));
+  } catch (error) {
+    sendJson(response, 502, { error: "profile_fetch_failed", message: error.message });
+  }
 }
 
 async function handleKospiQuant(request, response) {

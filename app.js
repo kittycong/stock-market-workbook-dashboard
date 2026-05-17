@@ -1460,7 +1460,9 @@ setInterval(() => {
   loadLiveQuotes();
   loadLiveChart();
   loadLiveNews();
+}, 60000);
+setInterval(() => {
   loadProfile();
   loadKospiQuant();
   loadFundFlow();
-}, 120000);
+}, 300000);
