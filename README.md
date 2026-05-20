@@ -9,7 +9,7 @@ npm start
 ```
 
 브라우저에서 `http://127.0.0.1:4173`을 엽니다.
-
+https://nvda-ceo-servicenow-now-2-1-et3extsj1.vercel.app
 ## 데이터
 
 - 실시간 가격/차트: Yahoo Finance chart endpoint
